@@ -1,0 +1,32 @@
+# Live overlay: the base manifests plus the real public hostname and TLS, so the
+# deployed cluster is fully declarative (the cert-manager ClusterIssuer
+# letsencrypt-prod is installed separately, once, on the cluster).
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - ../../k8s
+
+patches:
+  - patch: |
+      apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: k3s-demo
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+      spec:
+        tls:
+          - hosts: [k3s-demo.stephens.page]
+            secretName: k3s-demo-tls
+        rules:
+          - host: k3s-demo.stephens.page
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: k3s-demo
+                      port:
+                        number: 80

@@ -1,0 +1,27 @@
+# Least-privilege read access so the app can report the HPA's live CPU% and
+# replica counts via the in-cluster Kubernetes API (for the load chart).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k3s-demo
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: k3s-demo-reader
+rules:
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: k3s-demo-reader
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: k3s-demo-reader
+subjects:
+  - kind: ServiceAccount
+    name: k3s-demo

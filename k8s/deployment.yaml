@@ -20,6 +20,7 @@ spec:
       labels:
         app.kubernetes.io/name: k3s-demo
     spec:
+      serviceAccountName: k3s-demo
       securityContext:
         runAsNonRoot: true
         runAsUser: 10001
