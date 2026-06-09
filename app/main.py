@@ -200,7 +200,7 @@ PAGE = """<!DOCTYPE html>
 
   <p class="note" id="status">Pressing the button sends many concurrent <code>/burn</code> requests, which makes the app pods work hard.
   Watch CPU spike past the 70% line on the chart, and the pod count rise behind it as the autoscaler reacts.
-  Scale-down is gradual (~5 min after load stops); it's one node, so it caps at what the node can hold.</p>
+  After load stops, the pods scale back to 2 in about 30-60s (this HPA's scale-down is tuned for the demo; Kubernetes defaults to a cautious 5 minutes to avoid flapping). It's one node, so it caps at what the node can hold.</p>
 
   <details class="gloss" open>
     <summary>What am I looking at?</summary>
@@ -210,7 +210,7 @@ PAGE = """<!DOCTYPE html>
       <li><b>CPU %</b> - how hard the app pods are working, relative to the CPU they reserved. When it crosses <b>70%</b> (the green dashed line) the HPA adds pods; when it stays low, it removes them.</li>
       <li><b>Redis</b> - a fast in-memory datastore running next to the app (as a second tier). It holds the shared counter and the list of currently-active pods, so every pod sees the same state instead of each keeping its own.</li>
     </ul>
-    <p class="tail">Seeing 6/6 pods before pressing the button? A recent load test hasn't scaled back down yet - the HPA waits ~5 minutes of low CPU before removing pods, so it settles to 2 on its own.</p>
+    <p class="tail">Seeing more than 2 pods before pressing the button? A recent load test is still scaling back down - here that takes about 30-60s (Kubernetes' default is a cautious 5 minutes; this HPA is tuned faster for the demo).</p>
   </details>
 </div>
 <script>
@@ -262,7 +262,7 @@ async function runLoad(){
   const t=setInterval(()=>{ const left=Math.max(0,deadline-performance.now()); prog.style.width=(100*(1-left/(secs*1000)))+'%'; if(left<=0)clearInterval(t); },300);
   await Promise.all(ws);
   running=false; btn.disabled=false; prog.style.width='0';
-  document.getElementById('status').textContent='Load stopped. CPU drops first, then the HPA scales the pods back down to 2 over the next few minutes.';
+  document.getElementById('status').textContent='Load stopped. CPU drops first, then the HPA scales the pods back down to 2 within about a minute.';
 }
 </script>
 </body></html>"""
