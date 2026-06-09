@@ -1,0 +1,20 @@
+# Scales 2->6 replicas on CPU. Needs metrics-server (bundled with k3s). Drive it
+# with: hey -z 60s http://k3s-demo.localhost/burn?ms=500
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: k3s-demo
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: k3s-demo
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70

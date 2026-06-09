@@ -1,0 +1,19 @@
+# Uses the ingress controller k3s ships with (Traefik). On a stock k3s cluster
+# this is reachable at http://k3s-demo.localhost/ once /etc/hosts points the name
+# at the node IP.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: k3s-demo
+spec:
+  rules:
+    - host: k3s-demo.localhost
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: k3s-demo
+                port:
+                  number: 80
