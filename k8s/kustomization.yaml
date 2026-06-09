@@ -16,4 +16,4 @@ resources:
 # Pin the image tag here rather than editing the Deployment.
 images:
   - name: ghcr.io/jacobstephens2/k3s-demo
-    newTag: "1.2.2"
+    newTag: "1.2.3"

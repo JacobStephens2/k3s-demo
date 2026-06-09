@@ -141,6 +141,7 @@ PAGE = """<!DOCTYPE html>
   :root { color-scheme: dark; }
   body { margin:0; font:16px/1.5 system-ui,-apple-system,sans-serif; background:#0f1216; color:#e7ecf2; }
   .wrap { max-width:820px; margin:0 auto; padding:28px 20px 60px; }
+  .clock { float:right; font:13px/1 ui-monospace,SFMono-Regular,Menlo,monospace; color:#9aa6b4; background:#161b22; border:1px solid #232c38; border-radius:8px; padding:8px 11px; }
   h1 { font-size:1.5rem; margin:0 0 .2rem; }
   .sub { color:#8b97a6; margin:0 0 1.4rem; }
   .grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; margin:18px 0; }
@@ -169,6 +170,7 @@ PAGE = """<!DOCTYPE html>
   .gloss .tail { color:#8b97a6; font-size:.9rem; }
 </style></head>
 <body><div class="wrap">
+  <div id="clock" class="clock" title="live clock - so screenshots are timestamped"></div>
   <h1>k3s-demo</h1>
   <p class="sub">Kubernetes on a single k3s node - press the button and watch the load drive autoscaling, live.</p>
 
@@ -215,6 +217,9 @@ PAGE = """<!DOCTYPE html>
   </details>
 </div>
 <script>
+function tick(){ document.getElementById('clock').textContent = new Date().toLocaleString(undefined,{dateStyle:'medium',timeStyle:'medium'}); }
+setInterval(tick, 1000); tick();
+
 const hist = [];            // {cpu, pods}
 const MAXPTS = 60;
 let running = false;
