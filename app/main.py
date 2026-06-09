@@ -197,7 +197,8 @@ PAGE = """<!DOCTYPE html>
     <canvas id="chart" width="1560" height="400"></canvas>
   </div>
 
-  <div style="margin-top:16px"><button id="go" onclick="runLoad()">Run 75s load test</button></div>
+  <div style="margin-top:16px"><button id="go" onclick="runLoad()">Run 75s load test</button>
+    <button id="export" onclick="exportCsv()" style="background:#2a3340;margin-left:10px">Download CSV (<span id="samples">0</span> samples)</button></div>
   <div class="bar"><i id="prog"></i></div>
 
   <p class="note" id="status">Pressing the button sends many concurrent <code>/burn</code> requests, which makes the app pods work hard.
@@ -220,7 +221,7 @@ PAGE = """<!DOCTYPE html>
 function tick(){ document.getElementById('clock').textContent = new Date().toLocaleString(undefined,{dateStyle:'medium',timeStyle:'medium'}); }
 setInterval(tick, 1000); tick();
 
-const hist = [];            // {cpu, pods}
+const log = [];             // full history: {t, cpu, pods, current, desired, count}
 const MAXPTS = 60;
 let running = false;
 
@@ -228,7 +229,8 @@ function draw() {
   const c = document.getElementById('chart'), ctx = c.getContext('2d');
   const W = c.width, H = c.height, pad = 34;
   ctx.clearRect(0,0,W,H);
-  const cpuMax = Math.max(100, ...hist.map(h => h.cpu||0)) * 1.1;
+  const view = log.slice(-MAXPTS);
+  const cpuMax = Math.max(100, ...view.map(h => h.cpu||0)) * 1.1;
   const x = i => pad + (W-2*pad) * (i/(MAXPTS-1));
   const yCpu = v => H-pad - (H-2*pad) * Math.min(v,cpuMax)/cpuMax;
   const yPod = v => H-pad - (H-2*pad) * (v/6);
@@ -237,10 +239,10 @@ function draw() {
   ctx.beginPath(); ctx.moveTo(pad,yCpu(70)); ctx.lineTo(W-pad,yCpu(70)); ctx.stroke(); ctx.setLineDash([]);
   // pods (step, blue, behind)
   ctx.strokeStyle='#326ce5'; ctx.lineWidth=3; ctx.beginPath();
-  hist.forEach((h,i)=>{ const xx=x(i+MAXPTS-hist.length), yy=yPod(h.pods); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }); ctx.stroke();
+  view.forEach((h,i)=>{ const xx=x(i+MAXPTS-view.length), yy=yPod(h.pods); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }); ctx.stroke();
   // cpu (orange)
   ctx.strokeStyle='#f0883e'; ctx.lineWidth=3; ctx.beginPath();
-  hist.forEach((h,i)=>{ const xx=x(i+MAXPTS-hist.length), yy=yCpu(h.cpu||0); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }); ctx.stroke();
+  view.forEach((h,i)=>{ const xx=x(i+MAXPTS-view.length), yy=yCpu(h.cpu||0); i?ctx.lineTo(xx,yy):ctx.moveTo(xx,yy); }); ctx.stroke();
   ctx.fillStyle='#8b97a6'; ctx.font='22px system-ui'; ctx.fillText(Math.round(cpuMax)+'%', 4, yCpu(cpuMax)+18); ctx.fillText('0', 14, H-pad+6);
 }
 
@@ -252,7 +254,8 @@ async function poll() {
     document.getElementById('cpu').textContent = (s.cpu_pct==null?'-':s.cpu_pct);
     const viz=document.getElementById('podviz'); viz.innerHTML='';
     for(let i=0;i<s.active_pods;i++){const d=document.createElement('div');d.className='pod';viz.appendChild(d);}
-    hist.push({cpu: s.cpu_pct||0, pods: s.active_pods}); if(hist.length>MAXPTS) hist.shift();
+    log.push({t:new Date().toISOString(), cpu:s.cpu_pct||0, pods:s.active_pods, current:s.current_replicas, desired:s.desired_replicas, count:s.count});
+    document.getElementById('samples').textContent=log.length;
     draw();
   } catch(e) {}
 }
@@ -269,6 +272,17 @@ async function runLoad(){
   await Promise.all(ws);
   running=false; btn.disabled=false; prog.style.width='0';
   document.getElementById('status').textContent='Load stopped. CPU drops first, then the HPA scales the pods back down to 2 within about a minute.';
+}
+
+function exportCsv(){
+  if(!log.length) return;
+  const head=['time','cpu_pct','active_pods','current_replicas','desired_replicas','count'];
+  const rows=[head.join(',')].concat(log.map(r=>[r.t,r.cpu,r.pods,r.current,r.desired,r.count].join(',')));
+  const blob=new Blob([rows.join('\\n')],{type:'text/csv'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='k3s-demo-'+new Date().toISOString().replace(/[:.]/g,'-')+'.csv';
+  a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
 }
 </script>
 </body></html>"""
