@@ -3,6 +3,11 @@
 A small, containerized HTTP service and the Kubernetes manifests to run it on
 k3s - built as a deliberate, self-contained Kubernetes exercise.
 
+**Live:** https://k3s-demo.stephens.page ( `/` shows the pod + config + Redis
+status; `/count` is a Redis-backed counter shared across the app pods ). Running
+on a single k3s node on AWS EC2, TLS via cert-manager + Let's Encrypt. The
+provisioning is Terraform + cloud-init.
+
 It is intentionally **not** how I run production. My production fleet is ~70
 hostnames on a single VPS as systemd units behind Apache, where an orchestrator
 would add control-plane, networking, and state complexity to replace things that
