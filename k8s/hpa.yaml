@@ -18,3 +18,18 @@ spec:
         target:
           type: Utilization
           averageUtilization: 70
+  # Tuned for a demo: scale up fast, scale back down quickly (~30s) instead of the
+  # default 5-minute stabilization, so the pod count returns to 2 soon after load.
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 0
+      policies:
+        - type: Pods
+          value: 4
+          periodSeconds: 15
+    scaleDown:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 30
