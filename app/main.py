@@ -209,6 +209,7 @@ PAGE = """<!DOCTYPE html>
       <li><b>HorizontalPodAutoscaler (HPA)</b> - a Kubernetes controller that <b>automatically adds or removes pods</b> based on how busy they are. This one watches CPU, targets 70%, and ranges from <b>2 to 6</b> pods. It's what makes the count change on its own.</li>
       <li><b>CPU %</b> - how hard the app pods are working, relative to the CPU they reserved. When it crosses <b>70%</b> (the green dashed line) the HPA adds pods; when it stays low, it removes them.</li>
       <li><b>Redis</b> - a fast in-memory datastore running next to the app (as a second tier). It holds the shared counter and the list of currently-active pods, so every pod sees the same state instead of each keeping its own.</li>
+      <li><b>Container runtime</b> - the image is built with Docker, but this node runs it with <b>containerd</b> (k3s's built-in runtime, via Kubernetes' CRI), not the Docker daemon - Kubernetes dropped Docker as a runtime in v1.24. Docker-built (OCI) images run unchanged.</li>
     </ul>
     <p class="tail">Seeing more than 2 pods before pressing the button? A recent load test is still scaling back down - here that takes about 30-60s (Kubernetes' default is a cautious 5 minutes; this HPA is tuned faster for the demo).</p>
   </details>
