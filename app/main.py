@@ -1,9 +1,11 @@
-"""A small stateless HTTP service, sized to show Kubernetes operational concerns
-(probes, config/secret injection, autoscaling) rather than app complexity."""
+"""A small stateless HTTP service with a Redis-backed counter, sized to show
+Kubernetes operational concerns (probes, config/secret injection, autoscaling) and
+a stateful backing service (StatefulSet + PVC) rather than app complexity."""
 import os
 import socket
 import time
 
+import redis
 from fastapi import FastAPI, Response
 
 app = FastAPI(title="k3s-demo")
@@ -13,6 +15,18 @@ VERSION = os.environ.get("APP_VERSION", "dev")
 GREETING = os.environ.get("GREETING", "hello from k3s")
 # Injected from a Kubernetes Secret as an env var; presence only, never echoed.
 HAS_TOKEN = bool(os.environ.get("API_TOKEN"))
+REDIS_HOST = os.environ.get("REDIS_HOST", "redis")
+REDIS_PORT = int(os.environ.get("REDIS_PORT", "6379"))
+
+_client = None
+
+
+def rds():
+    global _client
+    if _client is None:
+        _client = redis.Redis(host=REDIS_HOST, port=REDIS_PORT,
+                              socket_connect_timeout=2, decode_responses=True)
+    return _client
 
 
 @app.get("/")
@@ -24,12 +38,24 @@ def index():
         "pod": socket.gethostname(),
         "uptime_seconds": round(time.monotonic() - START, 1),
         "secret_loaded": HAS_TOKEN,
+        "redis": f"{REDIS_HOST}:{REDIS_PORT}",
     }
+
+
+@app.get("/count")
+def count():
+    """Increment and return a counter in Redis - shared across all app pods,
+    persisted by the Redis StatefulSet's PVC."""
+    try:
+        n = rds().incr("k3s-demo:hits")
+        return {"count": n, "served_by": socket.gethostname()}
+    except redis.RedisError:
+        return Response(status_code=503, content="redis unavailable")
 
 
 @app.get("/healthz")
 def healthz():
-    """Liveness: process is up."""
+    """Liveness: the process is up (independent of Redis)."""
     return {"status": "ok"}
 
 

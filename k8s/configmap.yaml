@@ -5,3 +5,5 @@ metadata:
 data:
   GREETING: "hello from k3s - configuration via ConfigMap"
   APP_VERSION: "1.0.0"
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"

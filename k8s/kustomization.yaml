@@ -10,6 +10,7 @@ resources:
   - service.yaml
   - ingress.yaml
   - hpa.yaml
+  - redis.yaml
 
 # Pin the image tag here rather than editing the Deployment.
 images:

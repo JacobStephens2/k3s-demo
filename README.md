@@ -22,7 +22,11 @@ purpose so the manifests and operational concerns are the subject.
 | Config vs secret | `configmap.yaml`, `secret.yaml` | non-secret config and secret injected via `envFrom`, kept separate |
 | Service + ingress | `service.yaml`, `ingress.yaml` | ClusterIP + Traefik ingress (k3s default) |
 | Autoscaling | `hpa.yaml` + `/burn` endpoint | HPA v2 on CPU, 2->6 replicas, with a way to generate load |
+| Stateful backing service | `redis.yaml` + `/count` endpoint | Redis as a StatefulSet with a per-pod PVC and a headless Service; the app reaches it by DNS and shares a counter across all app pods |
 | Namespacing + overlays | `namespace.yaml`, `kustomization.yaml` | isolation in its own namespace; image tag pinned via kustomize |
+
+It's a two-tier app on purpose: a stateless web Deployment in front of a stateful
+Redis StatefulSet, so the manifests cover both halves a real service has.
 
 ## Run it on k3s
 
@@ -41,6 +45,7 @@ kubectl apply -k k8s/
 # 4. Reach it (Traefik ingress):
 echo "127.0.0.1 k3s-demo.localhost" | sudo tee -a /etc/hosts
 curl http://k3s-demo.localhost/        # JSON: pod name, version, config, secret_loaded
+curl http://k3s-demo.localhost/count   # Redis-backed counter, shared across app pods
 
 # 5. Watch the HPA react to load (needs metrics-server, bundled with k3s):
 kubectl -n k3s-demo get hpa -w &
