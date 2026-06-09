@@ -214,7 +214,7 @@ PAGE = """<!DOCTYPE html>
       <li><b>Redis</b> - a fast in-memory datastore running next to the app (as a second tier). It holds the shared counter and the list of currently-active pods, so every pod sees the same state instead of each keeping its own.</li>
       <li><b>Container runtime</b> - the image is built with Docker, but this node runs it with <b>containerd</b> (k3s's built-in runtime, via Kubernetes' CRI), not the Docker daemon - Kubernetes dropped Docker as a runtime in v1.24. Docker-built (OCI) images run unchanged.</li>
     </ul>
-    <p class="tail">Seeing more than 2 pods before pressing the button? A recent load test is still scaling back down - here that takes about 30-60s (Kubernetes' default is a cautious 5 minutes; this HPA is tuned faster for the demo).</p>
+    <p class="tail">Seeing more than 2 pods before pressing the button? A recent load test is still scaling back down - here that takes about 30-60s (Kubernetes' default is a cautious 5 minutes; this HPA is tuned faster for the demo). Briefly seeing more than 6? During a code deploy Kubernetes runs the old and new pods at once (a zero-downtime rolling update with maxSurge), so the count can momentarily exceed the 6-pod max before settling.</p>
   </details>
 </div>
 <script>
