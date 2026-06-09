@@ -210,7 +210,7 @@ PAGE = """<!DOCTYPE html>
     <ul>
       <li><b>Pod</b> - the smallest thing Kubernetes runs: one container, i.e. one running copy of this app. Normally <b>2 copies</b> share the traffic; under load Kubernetes starts more so the work is spread out.</li>
       <li><b>HorizontalPodAutoscaler (HPA)</b> - a Kubernetes controller that <b>automatically adds or removes pods</b> based on how busy they are. This one watches CPU, targets 70%, and ranges from <b>2 to 6</b> pods. It's what makes the count change on its own.</li>
-      <li><b>CPU %</b> - how hard the app pods are working, relative to the CPU they reserved. When it crosses <b>70%</b> (the green dashed line) the HPA adds pods; when it stays low, it removes them.</li>
+      <li><b>CPU %</b> - how hard the app pods are working, measured against the CPU each pod <b>reserves</b> (its <i>request</i>, 50m = 0.05 of a core here), not against a whole CPU - so it can go over 100%. A pod is allowed to burst up to its <i>limit</i> (250m), which reads as ~500% of its 50m request. When the average crosses <b>70%</b> (the green dashed line) the HPA adds pods; when it stays low, it removes them.</li>
       <li><b>Redis</b> - a fast in-memory datastore running next to the app (as a second tier). It holds the shared counter and the list of currently-active pods, so every pod sees the same state instead of each keeping its own.</li>
       <li><b>Container runtime</b> - the image is built with Docker, but this node runs it with <b>containerd</b> (k3s's built-in runtime, via Kubernetes' CRI), not the Docker daemon - Kubernetes dropped Docker as a runtime in v1.24. Docker-built (OCI) images run unchanged.</li>
     </ul>

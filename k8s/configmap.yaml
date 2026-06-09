@@ -4,6 +4,6 @@ metadata:
   name: k3s-demo-config
 data:
   GREETING: "hello from k3s - configuration via ConfigMap"
-  APP_VERSION: "1.2.5"
+  APP_VERSION: "1.2.6"
   REDIS_HOST: "redis"
   REDIS_PORT: "6379"
