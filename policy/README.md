@@ -51,16 +51,21 @@ kubectl apply -f https://raw.githubusercontent.com/open-policy-agent/gatekeeper/
 kubectl -n gatekeeper-system rollout status deploy/gatekeeper-controller-manager
 
 # 2. Templates first, then wait for their CRDs to register
-kubectl apply -f gatekeeper/templates/
+kubectl apply -k gatekeeper/templates/
 for k in k8srequirenonroot k8srequireresourcelimits k8sdisallowlatesttag \
          k8srequirehardenedcontainer k8srequireprobes; do
   kubectl wait --for=condition=established crd/${k}.constraints.gatekeeper.sh --timeout=60s
 done
 
 # 3. Constraints + the built-in VAP equivalent
-kubectl apply -f gatekeeper/constraints/
-kubectl apply -f vap/disallow-latest-tag-vap.yaml
+kubectl apply -k gatekeeper/constraints/
+kubectl apply -k vap/
 ```
+
+Each policy directory carries a `kustomization.yaml`, so the same `apply -k`
+works against a remote ref too - which is exactly how the cluster's cloud-init
+applies them on first boot (see `infra/k3s/cloud-init.sh.tftpl`), keeping the
+whole policy layer reproducible on a rebuild rather than hand-applied.
 
 ## Prove it denies
 

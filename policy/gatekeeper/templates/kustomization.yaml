@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# ConstraintTemplates only. These create the constraint CRDs; the constraints in
+# ../constraints are instances of them, so apply this first and wait for the CRDs
+# to be established before applying the constraints.
+resources:
+  - require-non-root.yaml
+  - require-resource-limits.yaml
+  - disallow-latest-tag.yaml
+  - require-hardened-container.yaml
+  - require-probes.yaml
