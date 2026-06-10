@@ -1,0 +1,42 @@
+# The same "no ':latest', no untagged image" rule as the Gatekeeper
+# K8sDisallowLatestTag template - but expressed as a built-in Kubernetes
+# ValidatingAdmissionPolicy using CEL, with no external controller. This is the
+# deliberate-choice half of the story: Gatekeeper/OPA buys a reusable policy
+# language (Rego transfers to API authz and agent permissioning, not just K8s),
+# while ValidatingAdmissionPolicy (GA since Kubernetes 1.30) covers simple,
+# single-resource rules in-tree with nothing to install or keep running.
+#
+# Both engines enforce the latest-tag rule here on purpose, so the cluster
+# demonstrates the comparison rather than just asserting it.
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: k3s-demo-disallow-latest-tag
+spec:
+  failurePolicy: Fail
+  matchConstraints:
+    resourceRules:
+      - apiGroups: ["apps"]
+        apiVersions: ["v1"]
+        operations: ["CREATE", "UPDATE"]
+        resources: ["deployments", "statefulsets"]
+  validations:
+    - expression: >-
+        object.spec.template.spec.containers.all(c,
+          !c.image.endsWith(':latest') && c.image.contains(':'))
+      message: "every container image must pin an explicit, non-':latest' tag (ValidatingAdmissionPolicy / CEL)"
+      reason: Invalid
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: k3s-demo-disallow-latest-tag
+spec:
+  policyName: k3s-demo-disallow-latest-tag
+  validationActions: ["Deny"]
+  matchResources:
+    namespaceSelector:
+      matchLabels:
+        # Every namespace carries this auto-managed label; scope the binding to
+        # the demo namespace so system workloads are untouched.
+        kubernetes.io/metadata.name: k3s-demo

@@ -1,0 +1,13 @@
+apiVersion: constraints.gatekeeper.sh/v1beta1
+kind: K8sRequireNonRoot
+metadata:
+  name: require-non-root
+spec:
+  enforcementAction: deny
+  match:
+    namespaces: ["k3s-demo"]
+    kinds:
+      - apiGroups: ["apps"]
+        kinds: ["Deployment", "StatefulSet"]
+      - apiGroups: [""]
+        kinds: ["Pod"]

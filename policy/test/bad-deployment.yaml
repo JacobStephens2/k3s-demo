@@ -1,0 +1,31 @@
+# A deliberately non-compliant Deployment used to prove the policy set actually
+# denies. Applying it into the k3s-demo namespace should be REJECTED at admission
+# for every reason below at once:
+#   - runs as root (no runAsNonRoot)            -> K8sRequireNonRoot
+#   - no resource requests/limits               -> K8sRequireResourceLimits
+#   - ':latest' image tag                       -> K8sDisallowLatestTag + the VAP
+#   - privileged-ish, writable root, no dropped caps -> K8sRequireHardenedContainer
+#   - no liveness/readiness probes              -> K8sRequireProbes
+#
+#   kubectl apply -f policy/test/bad-deployment.yaml   # expect: denied
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: policy-canary
+  namespace: k3s-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: policy-canary
+  template:
+    metadata:
+      labels:
+        app: policy-canary
+    spec:
+      containers:
+        - name: bad
+          image: nginx:latest
+          securityContext:
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false

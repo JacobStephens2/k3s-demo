@@ -1,0 +1,39 @@
+# Every container must declare both CPU and memory requests AND limits. Requests
+# are what the HPA's target percentage is computed against (see the glossary on
+# k3s-demo.stephens.page); limits are what protect a single node from one
+# runaway pod. Both are already set in the manifests - this makes them required.
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequireresourcelimits
+  annotations:
+    description: >-
+      Requires resources.requests and resources.limits for cpu and memory on
+      every container.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireResourceLimits
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequireresourcelimits
+
+        pod_spec = input.review.object.spec.template.spec {
+          input.review.object.spec.template.spec
+        } else = input.review.object.spec {
+          true
+        }
+
+        containers[c] { c := pod_spec.containers[_] }
+
+        required_resources := {"cpu", "memory"}
+
+        violation[{"msg": msg}] {
+          c := containers[_]
+          field := {"requests", "limits"}[_]
+          r := required_resources[_]
+          not c.resources[field][r]
+          msg := sprintf("container '%v' must set resources.%v.%v", [c.name, field, r])
+        }

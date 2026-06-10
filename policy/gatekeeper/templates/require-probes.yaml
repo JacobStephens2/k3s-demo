@@ -1,0 +1,40 @@
+# Every container must define a livenessProbe and a readinessProbe. Readiness is
+# what gates traffic during the zero-downtime rolling update (maxUnavailable: 0);
+# liveness is what recovers a wedged pod. Without them the rollout guarantees in
+# k8s/deployment.yaml are hollow, so the policy makes both mandatory.
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8srequireprobes
+  annotations:
+    description: >-
+      Requires both a livenessProbe and a readinessProbe on every container.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sRequireProbes
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8srequireprobes
+
+        pod_spec = input.review.object.spec.template.spec {
+          input.review.object.spec.template.spec
+        } else = input.review.object.spec {
+          true
+        }
+
+        containers[c] { c := pod_spec.containers[_] }
+
+        violation[{"msg": msg}] {
+          c := containers[_]
+          not c.livenessProbe
+          msg := sprintf("container '%v' must define a livenessProbe", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          c := containers[_]
+          not c.readinessProbe
+          msg := sprintf("container '%v' must define a readinessProbe", [c.name])
+        }

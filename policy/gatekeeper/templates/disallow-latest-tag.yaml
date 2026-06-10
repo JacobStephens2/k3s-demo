@@ -1,0 +1,46 @@
+# Images must pin an explicit tag - no ':latest', no untagged images. A floating
+# tag makes a rollout non-reproducible and a rollback meaningless (the same tag
+# can resolve to different bytes). The repo pins the tag in k8s/kustomization.yaml;
+# this enforces that discipline at the cluster edge.
+#
+# Note: this is a deliberately simple check. An image whose registry carries a
+# port (registry:5000/img with no tag) would pass the "has a tag" test - the
+# upstream gatekeeper-library template shares this limitation. The same rule is
+# also expressed in CEL under policy/vap/ as a ValidatingAdmissionPolicy.
+apiVersion: templates.gatekeeper.sh/v1
+kind: ConstraintTemplate
+metadata:
+  name: k8sdisallowlatesttag
+  annotations:
+    description: >-
+      Rejects containers using a ':latest' image tag or an untagged image.
+spec:
+  crd:
+    spec:
+      names:
+        kind: K8sDisallowLatestTag
+  targets:
+    - target: admission.k8s.gatekeeper.sh
+      rego: |
+        package k8sdisallowlatesttag
+
+        pod_spec = input.review.object.spec.template.spec {
+          input.review.object.spec.template.spec
+        } else = input.review.object.spec {
+          true
+        }
+
+        containers[c] { c := pod_spec.containers[_] }
+        containers[c] { c := pod_spec.initContainers[_] }
+
+        violation[{"msg": msg}] {
+          c := containers[_]
+          endswith(c.image, ":latest")
+          msg := sprintf("container '%v' uses a ':latest' image tag; pin an explicit version", [c.name])
+        }
+
+        violation[{"msg": msg}] {
+          c := containers[_]
+          not contains(c.image, ":")
+          msg := sprintf("container '%v' image '%v' has no tag; pin an explicit version", [c.name, c.image])
+        }
