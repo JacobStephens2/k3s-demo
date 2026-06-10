@@ -34,6 +34,7 @@ purpose so the manifests and operational concerns are the subject.
 | Autoscaling | `hpa.yaml` + `/burn` endpoint | HPA v2 on CPU, 2->6 replicas, with a way to generate load |
 | Stateful backing service | `redis.yaml` + `/count` endpoint | Redis as a StatefulSet with a per-pod PVC and a headless Service; the app reaches it by DNS and shares a counter across all app pods |
 | Namespacing + overlays | `namespace.yaml`, `kustomization.yaml` | isolation in its own namespace; image tag pinned via kustomize |
+| Policy as code | `policy/` | the hardening above made *enforced at admission* — OPA/Gatekeeper (Rego) for the five-rule set, plus a built-in ValidatingAdmissionPolicy (CEL) re-expressing one rule to show the engine tradeoff. See [`policy/README.md`](policy/README.md) |
 
 It's a two-tier app on purpose: a stateless web Deployment in front of a stateful
 Redis StatefulSet, so the manifests cover both halves a real service has.
@@ -68,5 +69,8 @@ rolling update; `kubectl -n k3s-demo get pods -w` shows readiness gating traffic
 ## Validation status
 
 The manifests are validated **statically** in CI - `kubectl kustomize k8s` rendered
-and checked against the Kubernetes schemas with `kubeconform -strict`. They are not
+and checked against the Kubernetes schemas with `kubeconform -strict`. The `policy/`
+manifests are validated too, with `-ignore-missing-schemas` so the Gatekeeper CRDs
+(ConstraintTemplate, the generated constraint kinds) are skipped while the standard
+kinds, including the ValidatingAdmissionPolicy, are still checked. They are not
 applied to any production cluster from here; run them on your own k3s/k3d as above.
