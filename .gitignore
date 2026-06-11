@@ -1,4 +1,4 @@
-__pycache__/
-*.pyc
-.venv/
+/k3s-demo
+*.test
+cover.out
 /tmp/

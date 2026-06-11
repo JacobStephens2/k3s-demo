@@ -1,18 +1,18 @@
-# Multi-stage build: install deps in a builder, copy into a slim runtime that
-# runs as a non-root user with a read-only root filesystem (see deployment.yaml).
-FROM python:3.12-slim AS build
-WORKDIR /app
-COPY requirements.txt .
-RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
+# Multi-stage build: compile a static Go binary, ship it in a FROM scratch
+# image - no shell, no interpreter, no libc, no package manager. The runtime
+# attack surface is the binary and nothing else, which is also why there is
+# no HEALTHCHECK here: Kubernetes' liveness/readiness probes (deployment.yaml)
+# do that job over HTTP, and scratch has no shell to run one anyway.
+FROM golang:1.26-alpine AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY main.go index.html ./
+RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /k3s-demo .
 
-FROM python:3.12-slim
-RUN useradd --system --uid 10001 --no-create-home app
-COPY --from=build /install /usr/local
-WORKDIR /app
-COPY app/ ./app/
+FROM scratch
+COPY --from=build /k3s-demo /k3s-demo
 ENV APP_VERSION=dev
 USER 10001
 EXPOSE 8000
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s \
-  CMD python -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/healthz')"
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+ENTRYPOINT ["/k3s-demo"]

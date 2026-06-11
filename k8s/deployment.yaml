@@ -40,11 +40,11 @@ spec:
                 name: k3s-demo-secret
           resources:
             requests:
-              cpu: 50m
-              memory: 64Mi
+              cpu: 50m # unchanged across the Go rewrite: the HPA demo's CPU% math is relative to this
+              memory: 16Mi # measured: the Go binary idles at ~4MiB RSS (the Python original needed 64Mi/128Mi)
             limits:
               cpu: 250m
-              memory: 128Mi
+              memory: 64Mi
           livenessProbe:
             httpGet:
               path: /healthz

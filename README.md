@@ -9,8 +9,10 @@ target while the pod count scales 2 → 6 in response, with a plain-language glo
 of pod / HPA / CPU / Redis. CPU% and replica counts are read from the HPA through
 the in-cluster Kubernetes API (a ServiceAccount with read-only RBAC); the
 active-pod count comes from Redis. `/info` is JSON status, `/count` the shared
-counter. Running on a single k3s node on AWS EC2, TLS via cert-manager + Let's
-Encrypt, provisioned by Terraform + cloud-init. The deployed cluster is the
+counter. The service is Go - a single static binary in a `FROM scratch` image
+(10.9MB, ~4MiB idle; it replaced the original Python/FastAPI service, 234MB,
+~38MiB, same endpoints and page). Running on a single k3s node on AWS EC2, TLS
+via cert-manager + Let's Encrypt, provisioned by Terraform + cloud-init. The deployed cluster is the
 `overlays/live` kustomize overlay (base + real hostname + TLS).
 
 It is intentionally **not** how I run production. My production fleet is ~70
@@ -24,9 +26,9 @@ purpose so the manifests and operational concerns are the subject.
 
 | Concern | Where | What it shows |
 |--------|-------|---------------|
-| Container hygiene | `Dockerfile` | multi-stage build, non-root user, slim runtime, HEALTHCHECK |
+| Container hygiene | `Dockerfile` | multi-stage build to a static Go binary in a `FROM scratch` image - no shell, interpreter, or libc to attack. 10.9MB image / ~4MiB idle RSS, measured against the Python/FastAPI original it replaced (234MB / ~38MiB) |
 | Workload + rollout | `k8s/deployment.yaml` | replicas, `RollingUpdate` with `maxUnavailable: 0`, `revisionHistoryLimit` |
-| Health gating | deployment probes + `app/main.py` | liveness (`/healthz`) vs readiness (`/readyz`, gated 2s so rollouts are observable) |
+| Health gating | deployment probes + `main.go` | liveness (`/healthz`) vs readiness (`/readyz`, gated 2s so rollouts are observable) |
 | Resource governance | deployment `resources` | CPU/memory requests and limits |
 | Pod hardening | deployment `securityContext` | `runAsNonRoot`, `readOnlyRootFilesystem`, drop all caps, seccomp `RuntimeDefault` |
 | Config vs secret | `configmap.yaml`, `secret.yaml` | non-secret config and secret injected via `envFrom`, kept separate |

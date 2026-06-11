@@ -12,7 +12,7 @@ jobs:
   image:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
@@ -23,5 +23,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/jacobstephens2/k3s-demo:1.2.8
+            ghcr.io/jacobstephens2/k3s-demo:2.0.0
             ghcr.io/jacobstephens2/k3s-demo:latest
