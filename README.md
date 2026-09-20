@@ -3,17 +3,23 @@
 A small, containerized HTTP service and the Kubernetes manifests to run it on
 k3s - built as a deliberate, self-contained Kubernetes exercise.
 
-**Live:** https://k3s-demo.stephens.page - an **interactive page**: press *Run load
-test* and watch a live chart plot the app's **CPU%** spiking past the HPA's 70%
-target while the pod count scales 2 → 6 in response, with a plain-language glossary
-of pod / HPA / CPU / Redis. CPU% and replica counts are read from the HPA through
-the in-cluster Kubernetes API (a ServiceAccount with read-only RBAC); the
-active-pod count comes from Redis. `/info` is JSON status, `/count` the shared
-counter. The service is Go - a single static binary in a `FROM scratch` image
-(10.9MB, ~4MiB idle; it replaced the original Python/FastAPI service, 234MB,
-~38MiB, same endpoints and page). Running on a single k3s node on AWS EC2, TLS
-via cert-manager + Let's Encrypt, provisioned by Terraform + cloud-init. The deployed cluster is the
-`overlays/live` kustomize overlay (base + real hostname + TLS).
+**Demo (recorded):** press *Run load test* and watch CPU% spike past the HPA's 70%
+target while the pod count scales 2 → 6, then CPU drop as load ends. Glossary of
+pod / HPA / CPU / Redis is on the same page.
+
+[![HPA load test: 2 pods at 2% CPU scaling to 6 pods at 500%+](docs/hpa-demo.jpg)](docs/hpa-demo.mp4)
+
+[Watch the 2m49s recording](docs/hpa-demo.mp4) — captured 2026-09-20 from the live
+cluster immediately before the dedicated AWS node was torn down. There is no
+public URL anymore; run it yourself with the steps below (k3d or k3s).
+
+CPU% and replica counts are read from the HPA through the in-cluster Kubernetes
+API (a ServiceAccount with read-only RBAC); the active-pod count comes from Redis.
+`/info` is JSON status, `/count` the shared counter. The service is Go - a single
+static binary in a `FROM scratch` image (10.9MB, ~4MiB idle; it replaced the
+original Python/FastAPI service, 234MB, ~38MiB, same endpoints and page). The
+`overlays/live` kustomize overlay is the hostname + TLS variant that used to be
+deployed (cert-manager + Let's Encrypt on a single-node k3s).
 
 It is intentionally **not** how I run production. My production fleet is ~70
 hostnames on a single VPS as systemd units behind Apache, where an orchestrator
